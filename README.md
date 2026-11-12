@@ -670,5 +670,428 @@ print(
 
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+"""
+Alternative: Turkey provinces with gold grade data
+
+Uses Natural Earth admin-1 boundaries.
+Cartopy GeoAxes (PlateCarree) for map projection,
+geographic coordinate labels, north arrow, and scale bar.
+"""
+
+import warnings
+
+import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
+from matplotlib.ticker import FixedLocator
+import numpy as np
+import geopandas as gpd
+import cartopy.crs as ccrs
+import cartopy.io.shapereader as shpreader
+from cartopy.io import DownloadWarning
+from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
+
+
+# ============================================================
+# 1. Gold grade data
+# ============================================================
+
+province_data = {
+    "İzmir": {"min": 1.10, "max": 36.60, "representative": 7.6},
+    "Gümüşhane": {"min": 0.89, "max": 12.00, "representative": 6.5},
+    "Artvin": {"min": 1.20, "max": 4.00, "representative": 2.6},
+    "Erzincan": {"min": 1.70, "max": 1.70, "representative": 1.7},
+    "Çanakkale": {"min": 0.55, "max": 5.76, "representative": 3.2},
+    "Balıkesir": {"min": 0.70, "max": 6.43, "representative": 3.6},
+    "Manisa": {"min": 1.38, "max": 1.38, "representative": 1.38},
+    "Uşak": {"min": 1.12, "max": 1.12, "representative": 1.12},
+    "Eskişehir": {"min": 0.162, "max": 6.04, "representative": 3.1},
+    "Sivas": {"min": 1.30, "max": 1.63, "representative": 1.47},
+    "Niğde": {"min": 3.12, "max": 8.00, "representative": 5.56},
+    "Ordu": {"min": 1.04, "max": 1.20, "representative": 1.12},
+    "Konya": {"min": 0.79, "max": 2.36, "representative": 2.36},
+}
+
+
+province_coords = {
+    "İzmir": (27.14, 38.42),
+    "Gümüşhane": (39.48, 40.46),
+    "Artvin": (41.82, 41.18),
+    "Erzincan": (39.49, 39.75),
+    "Çanakkale": (26.41, 40.15),
+    "Balıkesir": (27.89, 39.65),
+    "Manisa": (27.43, 38.61),
+    "Uşak": (29.41, 38.68),
+    "Eskişehir": (30.52, 39.78),
+    "Sivas": (37.02, 39.75),
+    "Niğde": (34.68, 37.97),
+    "Ordu": (37.88, 40.98),
+    "Konya": (32.48, 37.87),
+}
+
+
+# ============================================================
+# 2. Custom label positions
+# ============================================================
+
+# Offsets are in points: (horizontal, vertical)
+
+label_offsets = {
+    "İzmir": (-38, 30),
+    "Manisa": (42, -28),
+}
+
+
+# ============================================================
+# 3. Load Natural Earth admin-1 boundaries
+# ============================================================
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DownloadWarning)
+
+    shp_path = shpreader.natural_earth(
+        resolution="10m", category="cultural", name="admin_1_states_provinces"
+    )
+
+world_admin1 = gpd.read_file(shp_path)
+
+turkey_provinces = world_admin1[world_admin1["adm0_a3"] == "TUR"].copy()
+
+if turkey_provinces.crs is None:
+    turkey_provinces = turkey_provinces.set_crs(epsg=4326)
+else:
+    turkey_provinces = turkey_provinces.to_crs(epsg=4326)
+
+
+# ============================================================
+# 4. Create map
+# ============================================================
+
+plate = ccrs.PlateCarree()
+
+fig, ax = plt.subplots(
+    1,
+    1,
+    figsize=(14, 8),
+    subplot_kw={"projection": plate},
+)
+
+ax.set_extent([25, 45, 35.5, 42.5], crs=plate)
+
+
+# ============================================================
+# 5. Province boundaries
+# ============================================================
+
+turkey_provinces.plot(
+    ax=ax,
+    transform=plate,
+    facecolor="white",
+    edgecolor="gray",
+    linewidth=0.8,
+    alpha=0.6,
+    zorder=1,
+)
+
+
+# ============================================================
+# 6. Gold grade points and labels
+# ============================================================
+
+provinces = list(province_data.keys())
+
+grades = [province_data[p]["representative"] for p in provinces]
+
+norm = Normalize(vmin=min(grades), vmax=max(grades))
+
+cmap = plt.cm.YlOrRd
+
+for prov in provinces:
+    lon, lat = province_coords[prov]
+
+    grade = province_data[prov]["representative"]
+
+    color = cmap(norm(grade))
+
+    # ----------------------------------------
+    # Gold grade point
+    # ----------------------------------------
+
+    ax.scatter(
+        lon,
+        lat,
+        s=400,
+        c=[color],
+        edgecolors="black",
+        linewidth=1.5,
+        transform=plate,
+        zorder=5,
+    )
+
+    # ----------------------------------------
+    # Gold grade range
+    # ----------------------------------------
+
+    min_g = province_data[prov]["min"]
+    max_g = province_data[prov]["max"]
+
+    grade_text = f"{min_g:.2f}" if min_g == max_g else f"{min_g:.2f}–{max_g:.2f}"
+
+    label = f"{prov}\n({grade_text} g/t)"
+
+    # ----------------------------------------
+    # Custom label positions
+    # ----------------------------------------
+
+    offset = label_offsets.get(prov, (0, 14))
+
+    # ----------------------------------------
+    # Province labels
+    # ----------------------------------------
+
+    ax.annotate(
+        label,
+        xy=(lon, lat),
+        xycoords="data",
+        textcoords="offset points",
+        xytext=offset,
+        ha="center",
+        va="center",
+        fontsize=8,
+        fontweight="bold",
+        color="black",
+        zorder=10,
+        arrowprops=(
+            dict(
+                arrowstyle="-",
+                color="black",
+                linewidth=0.7,
+                shrinkA=3,
+                shrinkB=7,
+            )
+            if prov in ["İzmir", "Manisa"]
+            else None
+        ),
+        bbox=dict(
+            facecolor="white",
+            edgecolor="none",
+            alpha=0.75,
+            pad=1.5,
+        ),
+    )
+
+
+# ============================================================
+# 7. Geographic coordinates and map styling
+# ============================================================
+
+# Longitude and latitude tick intervals
+
+lon_ticks = np.arange(25, 46, 2)
+
+lat_ticks = np.arange(36, 43, 1)
+
+# Set coordinate ticks
+
+ax.set_xticks(lon_ticks, crs=plate)
+
+ax.set_yticks(lat_ticks, crs=plate)
+
+# Format longitude and latitude labels
+
+ax.xaxis.set_major_formatter(LongitudeFormatter(number_format=".0f", degree_symbol="°"))
+
+ax.yaxis.set_major_formatter(LatitudeFormatter(number_format=".0f", degree_symbol="°"))
+
+# Coordinate tick appearance
+
+ax.tick_params(
+    axis="both",
+    which="major",
+    labelsize=9,
+    direction="out",
+    length=4,
+    width=0.8,
+    pad=5,
+    bottom=True,
+    top=False,
+    left=True,
+    right=False,
+    labelbottom=True,
+    labelleft=True,
+)
+
+# Axis labels
+
+ax.set_xlabel("Longitude (°E)", fontsize=11, labelpad=8)
+
+ax.set_ylabel("Latitude (°N)", fontsize=11, labelpad=8)
+
+# Map title
+
+ax.set_title(
+    "Schematic: Provinces in Türkiye with Reported Gold Grade (g/t) Data",
+    fontsize=13,
+    fontweight="bold",
+    pad=15,
+)
+
+# Geographic gridlines
+
+ax.gridlines(
+    crs=plate,
+    draw_labels=False,
+    linewidth=0.5,
+    color="gray",
+    alpha=0.4,
+    linestyle="--",
+    xlocs=lon_ticks,
+    ylocs=lat_ticks,
+    zorder=2,
+)
+
+
+# ============================================================
+# 8. Colorbar
+# ============================================================
+
+sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+
+sm.set_array([])
+
+cbar = plt.colorbar(
+    sm,
+    ax=ax,
+    orientation="vertical",
+    shrink=0.63,
+    pad=0.02,
+)
+
+cbar.set_label("Representative Gold Grade (g/t Au)", fontsize=10)
+
+cbar.ax.tick_params(labelsize=9)
+
+
+# ============================================================
+# 9. North arrow
+# ============================================================
+
+
+def draw_north_arrow(ax):
+    ax.annotate(
+        "N",
+        xy=(0.94, 0.94),
+        xycoords="axes fraction",
+        ha="center",
+        va="center",
+        fontsize=13,
+        fontweight="bold",
+        zorder=20,
+    )
+
+    ax.annotate(
+        "",
+        xy=(0.94, 0.91),
+        xytext=(0.94, 0.81),
+        xycoords="axes fraction",
+        textcoords="axes fraction",
+        arrowprops=dict(arrowstyle="-|>", color="black", lw=2),
+        zorder=20,
+    )
+
+
+# ============================================================
+# 10. Manual scale bar
+# ============================================================
+
+
+def draw_manual_scale_bar(ax, lon0=38.5, lat0=36.3, km=100, height=0.12):
+    km_per_deg_lon = 111.32 * np.cos(np.radians(lat0))
+
+    dlon = km / km_per_deg_lon
+
+    # Main scale bar
+
+    ax.plot(
+        [lon0, lon0 + dlon],
+        [lat0, lat0],
+        color="black",
+        lw=4,
+        solid_capstyle="butt",
+        transform=plate,
+        zorder=20,
+    )
+
+    # End ticks
+
+    for x in (lon0, lon0 + dlon):
+        ax.plot(
+            [x, x],
+            [lat0 - height / 2, lat0 + height / 2],
+            color="black",
+            lw=1.5,
+            transform=plate,
+            zorder=20,
+        )
+
+    # Scale label
+
+    ax.text(
+        lon0 + dlon / 2,
+        lat0 + height,
+        f"{km} km",
+        ha="center",
+        va="bottom",
+        fontsize=8,
+        fontweight="bold",
+        transform=plate,
+        zorder=20,
+    )
+
+
+# ============================================================
+# 11. Add north arrow and scale bar
+# ============================================================
+
+try:
+    from matplotlib_map_utils.core.north_arrow import north_arrow
+    from matplotlib_map_utils.core.scale_bar import scale_bar
+
+    north_arrow(ax=ax, location="upper right", rotation={"degrees": 0}, scale=0.6)
+
+    scale_bar(
+        ax=ax,
+        location="lower right",
+        style="boxes",
+        bar={"projection": plate},
+        labels={"length": 100},
+    )
+
+    print("[Info] Using matplotlib_map_utils north arrow + scale bar.")
+
+except Exception as e:
+    print(f"[Info] matplotlib_map_utils unavailable ({e}); using manual fallback.")
+
+    draw_north_arrow(ax)
+
+    draw_manual_scale_bar(ax, lon0=38.5, lat0=36.3, km=100)
+
+
+# ============================================================
+# 12. Final layout and export
+# ============================================================
+
+plt.tight_layout()
+
+plt.savefig(
+    "turkey_gold_grade_schematic_map_ne.png",
+    dpi=200,
+    bbox_inches="tight",
+    facecolor="white",
+)
+
+plt.show()
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
 
 
