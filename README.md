@@ -1312,8 +1312,8 @@ cbar.outline.set_linewidth(0.7)
 
 ax.annotate(
     "N",
-    xy=(0.94, 0.93),
-    xytext=(0.94, 0.84),
+    xy=(0.94, 1.05),
+    xytext=(0.94, 0.95),
     xycoords="axes fraction",
     textcoords="axes fraction",
     ha="center",
