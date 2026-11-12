@@ -1093,5 +1093,370 @@ plt.show()
 
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+"""
+Global Distribution of Major Gold Deposits and Mines
+Gold Grade (Au, g/t)
+
+Cartographic features:
+- Robinson projection
+- Geographic longitude and latitude coordinates
+- Geographic graticule
+- Horizontal geodesic scale bar (2,000 km)
+- North arrow
+- Logarithmic gold-grade color classification
+- Selected deposit labels
+- High-resolution PNG and PDF export
+
+IMPORTANT:
+Gold grades are illustrative values.
+Verify all values using original technical reports
+before scientific publication.
+"""
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+from pyproj import Geod
+from matplotlib.lines import Line2D
+
+# ============================================================
+# 1. GLOBAL GOLD DEPOSIT DATABASE
+# ============================================================
+
+data = [
+    ("Kisladag", "Türkiye", 29.55, 38.48, 0.70),
+    ("Copler", "Türkiye", 40.12, 39.75, 1.50),
+    ("Ovacik", "Türkiye", 27.08, 39.08, 7.00),
+    ("Muruntau", "Uzbekistan", 64.57, 41.50, 2.50),
+    ("Olimpiada", "Russia", 93.43, 58.60, 3.50),
+    ("Sukhoi Log", "Russia", 103.96, 57.55, 2.30),
+    ("Grasberg", "Indonesia", 137.13, -4.05, 0.80),
+    ("Lihir", "Papua New Guinea", 152.64, -3.13, 2.50),
+    ("Cadia", "Australia", 149.03, -33.45, 0.40),
+    ("Boddington", "Australia", 116.39, -32.80, 0.70),
+    ("Fosterville", "Australia", 144.18, -36.77, 5.00),
+    ("Carlin Trend", "USA", -116.10, 40.70, 2.50),
+    ("Goldstrike", "USA", -116.28, 40.97, 3.00),
+    ("Cortez", "USA", -116.68, 40.18, 2.00),
+    ("Kirkland Lake", "Canada", -79.97, 48.15, 5.00),
+    ("Detour Lake", "Canada", -79.72, 50.02, 1.00),
+    ("Yanacocha", "Peru", -78.50, -6.98, 0.80),
+    ("Pueblo Viejo", "Dominican Republic", -70.17, 18.93, 2.50),
+    ("Paracatu", "Brazil", -46.85, -17.22, 0.40),
+    ("Kibali", "DR Congo", 29.75, 3.10, 3.50),
+    ("Loulo-Gounkoto", "Mali", -11.43, 13.05, 4.00),
+    ("Ahafo", "Ghana", -2.32, 7.04, 1.50),
+    ("Obuasi", "Ghana", -1.67, 6.20, 6.00),
+    ("Geita", "Tanzania", 32.23, -2.87, 3.00),
+    ("Mponeng", "South Africa", 27.42, -26.44, 8.00),
+]
+
+columns = ["Deposit", "Country", "Longitude", "Latitude", "Au_Grade"]
+
+df = pd.DataFrame(data, columns=columns)
+
+# ============================================================
+# 2. FIGURE AND MAP PROJECTION
+# ============================================================
+
+fig = plt.figure(figsize=(17, 9), dpi=300)
+
+map_crs = ccrs.Robinson()
+
+ax = fig.add_subplot(1, 1, 1, projection=map_crs)
+
+ax.set_global()
+ax.set_facecolor("white")
+
+# ============================================================
+# 3. MAP FEATURES
+# ============================================================
+
+ax.add_feature(cfeature.LAND, facecolor="white", edgecolor="none", zorder=0)
+
+ax.add_feature(cfeature.OCEAN, facecolor="white", zorder=0)
+
+ax.add_feature(cfeature.COASTLINE, linewidth=0.55, edgecolor="black", zorder=1)
+
+ax.add_feature(cfeature.BORDERS, linewidth=0.35, edgecolor="gray", zorder=1)
+
+ax.spines["geo"].set_linewidth(0.9)
+ax.spines["geo"].set_edgecolor("black")
+
+# ============================================================
+# 4. GEOGRAPHIC COORDINATES AND GRATICULE
+# ============================================================
+
+gl = ax.gridlines(
+    crs=ccrs.PlateCarree(),
+    draw_labels=True,
+    linewidth=0.45,
+    color="gray",
+    alpha=0.55,
+    linestyle="--",
+    x_inline=False,
+    y_inline=False,
+)
+
+gl.xlocator = plt.FixedLocator(np.arange(-180, 181, 30))
+gl.ylocator = plt.FixedLocator(np.arange(-60, 91, 15))
+
+gl.xformatter = LONGITUDE_FORMATTER
+gl.yformatter = LATITUDE_FORMATTER
+
+gl.xlabel_style = {"size": 8, "color": "black"}
+gl.ylabel_style = {"size": 8, "color": "black"}
+
+gl.top_labels = True
+gl.bottom_labels = True
+gl.left_labels = True
+gl.right_labels = True
+
+# ============================================================
+# 5. GOLD GRADE CLASSIFICATION
+# ============================================================
+
+grades = df["Au_Grade"].values
+
+norm = mcolors.LogNorm(vmin=0.3, vmax=10)
+
+cmap = plt.cm.YlOrRd
+
+marker_sizes = 35 + grades * 15
+
+# ============================================================
+# 6. PLOT GLOBAL GOLD DEPOSITS
+# ============================================================
+
+scatter = ax.scatter(
+    df["Longitude"],
+    df["Latitude"],
+    c=grades,
+    s=marker_sizes,
+    cmap=cmap,
+    norm=norm,
+    transform=ccrs.PlateCarree(),
+    edgecolors="black",
+    linewidths=0.65,
+    alpha=0.90,
+    zorder=5,
+)
+
+# ============================================================
+# 7. DEPOSIT LABELS
+# ============================================================
+
+selected_labels = [
+    "Kisladag",
+    "Muruntau",
+    "Grasberg",
+    "Carlin Trend",
+    "Fosterville",
+    "Mponeng",
+    "Lihir",
+    "Olimpiada",
+]
+
+label_offsets = {
+    "Kisladag": (3, 2),
+    "Muruntau": (3, 2),
+    "Grasberg": (-15, -5),
+    "Carlin Trend": (-20, 3),
+    "Fosterville": (3, -4),
+    "Mponeng": (3, -3),
+    "Lihir": (3, 3),
+    "Olimpiada": (3, 2),
+}
+
+for _, row in df.iterrows():
+    name = row["Deposit"]
+
+    if name in selected_labels:
+        dx, dy = label_offsets[name]
+
+        ax.text(
+            row["Longitude"] + dx,
+            row["Latitude"] + dy,
+            name,
+            transform=ccrs.PlateCarree(),
+            fontsize=7,
+            fontweight="bold",
+            color="black",
+            zorder=6,
+        )
+
+# ============================================================
+# 8. COLORBAR
+# ============================================================
+
+cbar = plt.colorbar(
+    scatter, ax=ax, orientation="vertical", pad=0.025, shrink=0.72, aspect=28
+)
+
+cbar.set_label("Gold Grade (Au, g/t)", fontsize=11, fontweight="bold", labelpad=12)
+
+cbar.set_ticks([0.3, 0.5, 1, 2, 5, 10])
+
+cbar.ax.tick_params(labelsize=9, width=0.7)
+
+cbar.outline.set_linewidth(0.7)
+
+# ============================================================
+# 9. NORTH ARROW
+# ============================================================
+
+ax.annotate(
+    "N",
+    xy=(0.94, 0.93),
+    xytext=(0.94, 0.84),
+    xycoords="axes fraction",
+    textcoords="axes fraction",
+    ha="center",
+    va="center",
+    fontsize=12,
+    fontweight="bold",
+    arrowprops=dict(
+        facecolor="black", edgecolor="black", width=2, headwidth=9, headlength=10
+    ),
+    zorder=10,
+)
+
+# ============================================================
+# 10. HORIZONTAL GEODESIC SCALE BAR
+# ============================================================
+
+geod = Geod(ellps="WGS84")
+
+# Scale bar length
+scale_length_km = 2000
+
+# Starting geographic coordinates
+lon_start = -120
+lat_start = -48
+
+# Calculate geodesic endpoint
+lon_end, lat_end, _ = geod.fwd(lon_start, lat_start, 90, scale_length_km * 1000)
+
+# Transform coordinates into Robinson projection
+x_start, y_start = map_crs.transform_point(lon_start, lat_start, ccrs.PlateCarree())
+
+x_end, y_end = map_crs.transform_point(lon_end, lat_end, ccrs.PlateCarree())
+
+# Horizontal scale bar
+y_scale = y_start
+
+ax.plot(
+    [x_start, x_end],
+    [y_scale, y_scale],
+    transform=map_crs,
+    color="black",
+    linewidth=3,
+    solid_capstyle="butt",
+    zorder=10,
+)
+
+# Vertical end ticks
+tick_length = 120000
+
+for x in [x_start, x_end]:
+    ax.plot(
+        [x, x],
+        [y_scale - tick_length / 2, y_scale + tick_length / 2],
+        transform=map_crs,
+        color="black",
+        linewidth=1.5,
+        zorder=10,
+    )
+
+# Scale bar label
+ax.text(
+    (x_start + x_end) / 2,
+    y_scale + 220000,
+    "2,000 km",
+    transform=map_crs,
+    ha="center",
+    va="bottom",
+    fontsize=9,
+    fontweight="bold",
+    color="black",
+    zorder=11,
+)
+
+# ============================================================
+# 11. MAP TITLE
+# ============================================================
+
+ax.set_title(
+    "Global Distribution of Major Gold Deposits and Mines "
+    "According to Gold Grade (Au, g/t)",
+    fontsize=15,
+    fontweight="bold",
+    pad=25,
+)
+
+# ============================================================
+# 12. LEGEND
+# ============================================================
+
+legend_elements = [
+    Line2D(
+        [0],
+        [0],
+        marker="o",
+        color="w",
+        label="Gold deposit / mine",
+        markerfacecolor="#E67E22",
+        markeredgecolor="black",
+        markersize=8,
+    )
+]
+
+ax.legend(
+    handles=legend_elements,
+    loc="lower left",
+    fontsize=9,
+    frameon=True,
+    framealpha=0.95,
+    edgecolor="black",
+)
+
+# ============================================================
+# 13. DATA SOURCE NOTE
+# ============================================================
+
+fig.text(
+    0.5,
+    0.025,
+    "Illustrative Au grades; verify against original "
+    "deposit-specific technical reports before publication.",
+    ha="center",
+    fontsize=8,
+    color="dimgray",
+)
+
+# ============================================================
+# 14. EXPORT HIGH-RESOLUTION MAP
+# ============================================================
+
+plt.savefig(
+    "Global_Major_Gold_Deposits_Au_Grade.png",
+    dpi=300,
+    bbox_inches="tight",
+    facecolor="white",
+)
+
+plt.savefig(
+    "Global_Major_Gold_Deposits_Au_Grade.pdf", bbox_inches="tight", facecolor="white"
+)
+
+plt.show()
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
 
 
