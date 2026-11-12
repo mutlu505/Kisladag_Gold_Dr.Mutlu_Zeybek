@@ -308,3 +308,367 @@ print("Saved: kisladag_geochemical_maps.png")
 
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+
+# ---- Data (from Appendix 1) ----
+data = [
+    ("GC-271", 687755, 4261727, 966, 0.50, 23),
+    ("GC-271", 687759, 4261645, 789, 0.78, 303),
+    ("GC-272", 687694, 4261462, 833, 0.46, 415),
+    ("GC-273", 687823, 4261612, 836, 0.36, 183),
+    ("GC-274", 687807, 4261524, 909, 0.79, 300),
+    ("GC-275", 687701, 4261729, 805, 0.91, 388),
+    ("GC-276", 687174, 4261444, 935, 0.62, 275),
+    ("GC-277", 686970, 4261636, 891, 0.33, 206),
+    ("GC-278", 687400, 4261308, 1013, 0.43, 58),
+    ("GC-278", 687397, 4261359, 821, 1.08, 300),
+    ("GC-279", 687154, 4261760, 919, 0.56, 240),
+    ("GC-279", 687147, 4261846, 749, 0.44, 70),
+    ("GC-280", 687571, 4261364, 868, 1.11, 301),
+    ("GC-281", 687502, 4261377, 836, 1.70, 340),
+    ("GC-282", 687108, 4261714, 866, 0.80, 399),
+    ("GC-283", 687762, 4261536, 853, 0.84, 325),
+    ("GC-284", 687596, 4261464, 850, 0.40, 324),
+    ("GC-285", 687056, 4261595, 838, 0.70, 391),
+    ("GC-286", 687569, 4261783, 989, 0.22, 28),
+    ("GC-286", 687608, 4261842, 873, 0.57, 218),
+    ("GC-286", 687640, 4261901, 738, 0.23, 20),
+    ("GC-287", 687263, 4261405, 936, 1.01, 194),
+    ("GC-288", 687123, 4261481, 1010, 0.45, 25),
+    ("GC-288", 687125, 4261435, 931, 0.45, 138),
+    ("GC-289", 687381, 4261462, 802, 1.07, 198),
+    ("GC-290", 687443, 4261818, 929, 1.28, 165),
+    ("GC-291", 687239, 4261431, 893, 1.01, 275),
+    ("GC-292", 687200, 4261637, 958, 0.66, 185),
+    ("GC-292", 687203, 4261715, 766, 0.53, 174),
+    ("GC-293", 687221, 4261586, 986, 0.53, 133),
+    ("GC-293", 687272, 4261586, 902, 0.37, 30),
+    ("GC-294", 687031, 4261553, 831, 0.43, 311),
+    ("GC-295", 687101, 4261654, 861, 0.75, 316),
+    ("GC-296", 687239, 4261527, 809, 0.69, 125),
+    ("GC-297", 687051, 4261780, 886, 0.24, 20),
+    ("GC-297", 687093, 4261697, 751, 0.48, 213),
+    ("GC-298", 686948, 4261430, 996, 0.28, 20),
+    ("GC-298", 686948, 4261449, 964, 0.22, 30),
+    ("GC-298", 686947, 4261492, 890, 0.30, 15),
+    ("GC-298", 686945, 4261560, 770, 0.98, 67),
+    ("GC-299", 687092, 4261517, 985, 0.29, 25),
+    ("GC-299", 687073, 4261498, 931, 0.33, 25),
+    ("GC-299", 687027, 4261454, 805, 0.44, 178),
+    ("GC-303", 686904, 4261425, 894, 0.34, 148),
+    ("GC-303", 686911, 4261515, 733, 0.20, 30),
+    ("GC-303", 686913, 4261547, 676, 0.26, 38),
+    ("GC-303", 686915, 4261570, 634, 0.21, 19),
+    ("GC-304", 686831, 4261589, 740, 0.74, 265),
+    ("GC-313", 687500, 4261782, 969, 0.60, 48),
+    ("GC-313", 687501, 4261845, 857, 0.80, 175),
+    ("GC-317", 687793, 4261650, 912, 0.38, 203),
+    ("GC-317", 687873, 4261650, 811, 0.26, 15),
+    ("GC-320", 687467, 4261359, 913, 0.66, 188),
+    ("GC-320", 687492, 4261291, 807, 0.24, 15),
+    ("GC-321", 687821, 4261478, 793, 0.69, 519),
+    ("GC-322", 687679, 4261776, 802, 0.68, 293),
+    ("GC-323", 687124, 4261777, 952, 0.63, 123),
+    ("GC-324", 687575, 4261553, 974, 0.24, 15),
+    ("GC-324", 687663, 4261446, 747, 0.60, 456),
+    ("GC-325", 686958, 4261375, 938, 0.34, 33),
+    ("GC-325", 686967, 4261447, 824, 0.41, 168),
+    ("GC-325", 686978, 4261553, 662, 0.35, 120),
+    ("GC-327", 687174, 4261332, 671, 0.27, 33),
+    ("GC-327", 687173, 4261350, 611, 0.34, 68),
+    ("GC-327", 687171, 4261367, 556, 0.22, 38),
+    ("GC-328", 687319, 4261397, 879, 0.74, 258),
+    ("GC-328", 687299, 4261284, 634, 0.77, 43),
+    ("GC-329", 686716, 4261601, 870, 0.48, 108),
+    ("GC-329", 686666, 4261532, 693, 0.36, 15),
+    ("GC-329", 686650, 4261510, 633, 0.38, 27),
+    ("GC-330", 686971, 4261722, 724, 0.39, 43),
+    ("GC-330", 686968, 4261691, 638, 0.32, 90),
+    ("GC-331", 687421, 4261250, 863, 0.74, 18),
+    ("GC-333", 687852, 4261411, 991, 0.33, 50),
+    ("GC-334", 687784, 4261349, 918, 0.43, 155),
+    ("GC-334", 687791, 4261284, 779, 0.23, 23),
+    ("GC-335", 687827, 4261448, 973, 0.49, 155),
+    ("GC-335", 687948, 4261449, 799, 0.20, 17),
+    ("GC-336", 687297, 4261392, 716, 0.52, 156),
+    ("GC-337", 687102, 4261436, 829, 0.42, 451),
+    ("GC-338", 687358, 4261458, 771, 0.63, 345),
+    ("GC-339", 686901, 4261649, 707, 0.40, 118),
+    ("GC-340", 686787, 4261654, 765, 0.37, 231),
+    ("GC-341", 686900, 4261647, 881, 0.27, 25),
+    ("GC-341", 687017, 4261644, 665, 0.36, 276),
+    ("GC-342", 686829, 4261499, 752, 0.44, 363),
+    ("GC-344", 686576, 4261473, 975, 0.34, 25),
+    ("GC-344", 686576, 4261438, 855, 0.34, 45),
+    ("GC-344", 686578, 4261400, 714, 0.23, 58),
+    ("GC-345", 686592, 4261581, 739, 0.46, 157),
+    ("GC-346", 687242, 4261672, 992, 0.68, 93),
+    ("GC-346", 687310, 4261709, 888, 0.47, 38),
+    ("GC-348", 687189, 4261390, 992, 0.43, 135),
+    ("GC-349", 687628, 4261894, 989, 0.19, 20),
+    ("GC-349", 687601, 4261819, 879, 0.93, 117),
+    ("GC-350", 687839, 4261670, 846, 0.21, 18),
+    ("GC-351", 687865, 4261631, 844, 0.40, 63),
+    ("GC-351", 687896, 4261485, 432, 0.44, 783),
+    ("GC-352", 687398, 4261752, 697, 0.58, 532),
+    ("GC-353", 687544, 4261725, 669, 0.84, 560),
+    ("GC-354", 687682, 4261871, 902, 0.28, 48),
+    ("GC-354", 687636, 4261810, 616, 0.39, 500),
+    ("GC-355", 687453, 4261337, 556, 0.84, 206),
+    ("GC-357", 687569, 4261324, 529, 0.44, 473),
+    ("GC-358", 687786, 4261317, 867, 0.23, 60),
+    ("GC-358", 687799, 4261395, 544, 0.53, 422),
+    ("GC-359", 687840, 4261385, 993, 0.26, 80),
+    ("GC-360", 687426, 4261390, 664, 0.83, 383),
+    ("GC-361", 687543, 4261281, 816, 0.20, 15),
+    ("GC-361", 687522, 4261404, 546, 0.76, 530),
+    ("GC-362", 687340, 4261789, 676, 0.52, 302),
+    ("GC-363", 687436, 4261742, 618, 0.67, 355),
+    ("GC-364", 687806, 4261408, 996, 0.45, 63),
+    ("GC-364", 687630, 4261390, 502, 0.49, 955),
+    ("GR-307", 686924, 4261623, 955, 0.19, 90),
+    ("GR-307", 686926, 4261747, 721, 0.37, 40),
+    ("GR-309", 687019, 4261626, 798, 0.59, 421),
+    ("GR-310", 687829, 4261715, 850, 0.32, 20),
+    ("GR-310", 687805, 4261664, 744, 0.57, 170),
+    ("GR-311", 687827, 4261413, 980, 0.44, 140),
+    ("GR-311", 687829, 4261394, 870, 0.26, 38),
+    ("GR-312", 687348, 4261822, 854, 0.52, 238),
+    ("GR-315", 687449, 4261346, 981, 0.31, 95),
+    ("GR-315", 687449, 4261440, 804, 1.01, 285),
+    ("PZ-01", 687773, 4261269, 898, 0.33, 60),
+    ("PZ-01", 687773, 4261269, 804, 0.22, 68),
+    ("PZ-06", 686930, 4261600, 852, 0.63, 288),
+    ("PZ-07", 687715, 4261196, 740, 0.35, 39),
+]
+
+df = pd.DataFrame(data, columns=["DHID", "East", "North", "Elevation", "Au", "Length"])
+
+# ---- CHART 1: Histogram of Gold Grades (Au g/t) ----
+plt.figure(figsize=(10, 6))
+
+plt.hist(df["Au"], bins=15, color="goldenrod", edgecolor="black", alpha=0.85)
+
+plt.axvline(
+    df["Au"].mean(),
+    color="red",
+    linestyle="--",
+    linewidth=2,
+    label=f"Mean = {df['Au'].mean():.2f} g/t",
+)
+
+plt.axvline(
+    df["Au"].median(),
+    color="blue",
+    linestyle=":",
+    linewidth=2,
+    label=f"Median = {df['Au'].median():.2f} g/t",
+)
+
+plt.title("Distribution of Gold Grades (Au g/t) — 125 Intercepts", fontsize=14)
+plt.xlabel("Gold Grade (g/t)")
+plt.ylabel("Frequency")
+plt.legend()
+plt.grid(axis="y", alpha=0.3)
+plt.tight_layout()
+plt.savefig("chart1_au_histogram.png", dpi=300)
+
+
+# ---- CHART 2: Histogram of Intercept Lengths ----
+plt.figure(figsize=(10, 6))
+
+plt.hist(df["Length"], bins=20, color="steelblue", edgecolor="black", alpha=0.85)
+
+plt.axvline(
+    df["Length"].mean(),
+    color="red",
+    linestyle="--",
+    linewidth=2,
+    label=f"Mean = {df['Length'].mean():.0f} m",
+)
+
+plt.axvline(
+    df["Length"].median(),
+    color="blue",
+    linestyle=":",
+    linewidth=2,
+    label=f"Median = {df['Length'].median():.0f} m",
+)
+
+plt.title("Distribution of Mineralized Intercept Lengths", fontsize=14)
+plt.xlabel("Length (m)")
+plt.ylabel("Frequency")
+plt.legend()
+plt.grid(axis="y", alpha=0.3)
+plt.tight_layout()
+plt.savefig("chart2_length_histogram.png", dpi=300)
+
+
+# ---- CHART 3: Box Plot of Gold Grades ----
+plt.figure(figsize=(8, 5))
+
+sns.boxplot(x=df["Au"], color="goldenrod")
+
+plt.title("Box Plot of Gold Grades (Au g/t)", fontsize=14)
+plt.xlabel("Gold Grade (g/t)")
+plt.grid(axis="x", alpha=0.3)
+plt.tight_layout()
+plt.savefig("chart3_au_boxplot.png", dpi=300)
+
+
+# ---- CHART 4: Scatter — Grade vs Length ----
+plt.figure(figsize=(10, 6))
+
+plt.scatter(df["Length"], df["Au"], alpha=0.6, color="darkgreen", edgecolor="black")
+
+plt.title("Gold Grade vs. Intercept Length", fontsize=14)
+plt.xlabel("Intercept Length (m)")
+plt.ylabel("Gold Grade (g/t)")
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.savefig("chart4_grade_vs_length.png", dpi=300)
+
+
+# ---- CHART 5: Spatial Map of Intercepts (colored by grade) ----
+fig, ax = plt.subplots(figsize=(10, 8))
+
+sc = ax.scatter(
+    df["East"],
+    df["North"],
+    c=df["Au"],
+    cmap="YlOrRd",
+    s=df["Length"] / 10 + 20,
+    edgecolor="black",
+    alpha=0.8,
+)
+
+# Set equal spatial scaling
+ax.set_aspect("equal", adjustable="box")
+
+# Title and axis labels
+ax.set_title(
+    "Spatial Distribution of Drill Intercepts\n"
+    "(bubble size ∝ intercept length, color = Au grade)",
+    fontsize=13,
+)
+
+ax.set_xlabel("Easting (m)")
+ax.set_ylabel("Northing (m)")
+ax.grid(alpha=0.3)
+
+# ---- NORTH ARROW ----
+ax.annotate(
+    "N",
+    xy=(0.93, 0.95),
+    xytext=(0.93, 0.86),
+    xycoords="axes fraction",
+    textcoords="axes fraction",
+    ha="center",
+    va="center",
+    fontsize=14,
+    fontweight="bold",
+    arrowprops=dict(
+        facecolor="black", edgecolor="black", width=3, headwidth=10, headlength=12
+    ),
+)
+
+# ---- SCALE BAR (200 m) ----
+scale_length = 200  # meters
+
+# Get the final map limits
+x_min, x_max = ax.get_xlim()
+y_min, y_max = ax.get_ylim()
+
+# Position the scale bar in the lower-left corner
+x_start = x_min + 0.08 * (x_max - x_min)
+y_start = y_min + 0.06 * (y_max - y_min)
+
+# Main scale bar
+ax.plot(
+    [x_start, x_start + scale_length],
+    [y_start, y_start],
+    color="black",
+    linewidth=3,
+    solid_capstyle="butt",
+)
+
+# Scale bar end ticks
+tick_height = 0.008 * (y_max - y_min)
+
+ax.plot(
+    [x_start, x_start],
+    [y_start - tick_height, y_start + tick_height],
+    color="black",
+    linewidth=1.5,
+)
+
+ax.plot(
+    [x_start + scale_length, x_start + scale_length],
+    [y_start - tick_height, y_start + tick_height],
+    color="black",
+    linewidth=1.5,
+)
+
+# Scale bar label
+ax.text(
+    x_start + scale_length / 2,
+    y_start + 0.025 * (y_max - y_min),
+    "200 m",
+    ha="center",
+    va="bottom",
+    fontsize=10,
+    fontweight="bold",
+)
+
+# ---- COLORBAR: MATCH THE MAP HEIGHT ----
+# Create the colorbar using the same vertical position and height as the map axes.
+cbar = fig.colorbar(sc, ax=ax, fraction=0.035, pad=0.02, shrink=0.55, aspect=30)
+
+cbar.set_label("Au (g/t)", fontsize=10)
+
+# Final layout
+plt.tight_layout()
+
+plt.savefig("chart5_spatial_map.png", dpi=300, bbox_inches="tight")
+
+
+# ---- CHART 6: Grade vs Elevation ----
+plt.figure(figsize=(10, 6))
+
+plt.scatter(df["Elevation"], df["Au"], alpha=0.6, color="purple", edgecolor="black")
+
+plt.title("Gold Grade vs. Elevation", fontsize=14)
+plt.xlabel("Elevation (m)")
+plt.ylabel("Gold Grade (g/t)")
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.savefig("chart6_grade_vs_elevation.png", dpi=300)
+
+
+# ---- SUMMARY STATISTICS ----
+print("All charts saved successfully.")
+
+print("\nSummary Statistics:")
+print(f"  Records: {len(df)}")
+
+print(
+    f"  Au mean: {df['Au'].mean():.3f} g/t | "
+    f"median: {df['Au'].median():.3f} | "
+    f"min: {df['Au'].min()} | "
+    f"max: {df['Au'].max()}"
+)
+
+print(
+    f"  Length mean: {df['Length'].mean():.1f} m | "
+    f"median: {df['Length'].median():.1f} | "
+    f"min: {df['Length'].min()} | "
+    f"max: {df['Length'].max()}"
+)
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
